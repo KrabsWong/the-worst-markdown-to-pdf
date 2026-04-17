@@ -9,50 +9,50 @@ const program = new Command();
 
 program
   .name('md2pdf')
-  .description('将 Markdown 文档转换为美观的 PDF，支持 GitHub 风格、Mermaid 图表和 LaTeX 公式')
+  .description('Convert Markdown documents to beautifully styled PDFs with GitHub-style rendering, Mermaid diagrams, and LaTeX support')
   .version('1.0.0');
 
 program
-  .argument('<input>', '输入 Markdown 文件路径')
-  .option('-o, --output <path>', '输出 PDF 文件路径')
-  .option('-t, --title <title>', 'PDF 文档标题')
-  .option('--no-mermaid', '禁用 Mermaid 图表渲染')
-  .option('--no-latex', '禁用 LaTeX 公式渲染')
-  .option('--theme <theme>', '文档主题 (github-light | github-dark)', 'github-light')
-  .option('--code-theme <theme>', '代码高亮主题 (github | github-dark | atom-one-light | atom-one-dark | vs | vs2015)', 'github')
-  .option('--format <format>', '页面格式 (A4 | Letter | Legal | A3 | A5)', 'A4')
-  .option('--landscape', '横向页面')
-  .option('--margin <margin>', '页边距 (例如: 20mm, 1in)', '20mm')
-  .option('--margin-top <margin>', '上边距')
-  .option('--margin-right <margin>', '右边距')
-  .option('--margin-bottom <margin>', '下边距')
-  .option('--margin-left <margin>', '左边距')
-  .option('--css <path>', '自定义 CSS 文件路径')
-  .option('--header', '显示页眉')
-  .option('--footer', '显示页脚')
-  .option('--timeout <ms>', '渲染超时时间（毫秒）', '30000')
+  .argument('<input>', 'Input Markdown file path')
+  .option('-o, --output <path>', 'Output PDF file path')
+  .option('-t, --title <title>', 'PDF document title')
+  .option('--no-mermaid', 'Disable Mermaid diagram rendering')
+  .option('--no-latex', 'Disable LaTeX formula rendering')
+  .option('--theme <theme>', 'Document theme (github-light | github-dark)', 'github-light')
+  .option('--code-theme <theme>', 'Code highlighting theme (github | github-dark | atom-one-light | atom-one-dark | vs | vs2015)', 'github')
+  .option('--format <format>', 'Page format (A4 | Letter | Legal | A3 | A5)', 'A4')
+  .option('--landscape', 'Landscape orientation')
+  .option('--margin <margin>', 'Page margins (e.g., 20mm, 1in)', '20mm')
+  .option('--margin-top <margin>', 'Top margin')
+  .option('--margin-right <margin>', 'Right margin')
+  .option('--margin-bottom <margin>', 'Bottom margin')
+  .option('--margin-left <margin>', 'Left margin')
+  .option('--css <path>', 'Custom CSS file path')
+  .option('--header', 'Display header')
+  .option('--footer', 'Display footer')
+  .option('--timeout <ms>', 'Rendering timeout in milliseconds', '30000')
   .action(async (input: string, options: any) => {
     try {
-      // 检查输入文件是否存在
+      // Check if input file exists
       if (!fs.existsSync(input)) {
-        console.error(chalk.red(`错误: 文件不存在: ${input}`));
+        console.error(chalk.red(`Error: File not found: ${input}`));
         process.exit(1);
       }
 
-      // 确定输出路径
+      // Determine output path
       const outputPath = options.output || input.replace(/\.md$/i, '.pdf');
 
-      // 读取自定义 CSS
+      // Read custom CSS
       let customCSS = '';
       if (options.css) {
         if (!fs.existsSync(options.css)) {
-          console.error(chalk.red(`错误: CSS 文件不存在: ${options.css}`));
+          console.error(chalk.red(`Error: CSS file not found: ${options.css}`));
           process.exit(1);
         }
         customCSS = fs.readFileSync(options.css, 'utf-8');
       }
 
-      // 构建 PDF 选项
+      // Build PDF options
       const pdfOptions: PDFOptions = {
         format: options.format,
         landscape: options.landscape || false,
@@ -67,9 +67,9 @@ program
         timeout: parseInt(options.timeout)
       };
 
-      console.log(chalk.blue('正在转换...'));
-      console.log(chalk.gray(`输入: ${path.resolve(input)}`));
-      console.log(chalk.gray(`输出: ${path.resolve(outputPath)}`));
+      console.log(chalk.blue('Converting...'));
+      console.log(chalk.gray(`Input: ${path.resolve(input)}`));
+      console.log(chalk.gray(`Output: ${path.resolve(outputPath)}`));
 
       const startTime = Date.now();
 
@@ -85,36 +85,36 @@ program
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-      console.log(chalk.green(`✓ 转换成功! (${duration}s)`));
-      console.log(chalk.gray(`输出文件: ${path.resolve(outputPath)}`));
+      console.log(chalk.green(`Conversion successful! (${duration}s)`));
+      console.log(chalk.gray(`Output file: ${path.resolve(outputPath)}`));
 
     } catch (error) {
-      console.error(chalk.red('转换失败:'), error);
+      console.error(chalk.red('Conversion failed:'), error);
       process.exit(1);
     }
   });
 
 program
   .command('batch')
-  .description('批量转换多个 Markdown 文件')
-  .argument('<pattern>', '文件匹配模式（如: docs/*.md）')
-  .option('-o, --output-dir <dir>', '输出目录', './pdfs')
-  .option('--no-mermaid', '禁用 Mermaid 图表渲染')
-  .option('--no-latex', '禁用 LaTeX 公式渲染')
-  .option('--theme <theme>', '文档主题', 'github-light')
+  .description('Batch convert multiple Markdown files')
+  .argument('<pattern>', 'File pattern (e.g., docs/*.md)')
+  .option('-o, --output-dir <dir>', 'Output directory', './pdfs')
+  .option('--no-mermaid', 'Disable Mermaid diagram rendering')
+  .option('--no-latex', 'Disable LaTeX formula rendering')
+  .option('--theme <theme>', 'Document theme', 'github-light')
   .action(async (pattern: string, options: any) => {
     try {
       const glob = require('glob');
       const files = glob.sync(pattern);
 
       if (files.length === 0) {
-        console.log(chalk.yellow('未找到匹配的文件'));
+        console.log(chalk.yellow('No matching files found'));
         return;
       }
 
-      console.log(chalk.blue(`找到 ${files.length} 个文件`));
+      console.log(chalk.blue(`Found ${files.length} files`));
 
-      // 确保输出目录存在
+      // Ensure output directory exists
       if (!fs.existsSync(options.outputDir)) {
         fs.mkdirSync(options.outputDir, { recursive: true });
       }
@@ -130,7 +130,7 @@ program
           const basename = path.basename(file, '.md');
           const outputPath = path.join(options.outputDir, `${basename}.pdf`);
 
-          process.stdout.write(chalk.gray(`转换: ${file} ... `));
+          process.stdout.write(chalk.gray(`Converting: ${file} ... `));
 
           await converter.convert({
             content: fs.readFileSync(file, 'utf-8'),
@@ -141,47 +141,47 @@ program
             theme: options.theme
           });
 
-          console.log(chalk.green('✓'));
+          console.log(chalk.green('OK'));
           successCount++;
         } catch (error) {
-          console.log(chalk.red('✗'));
-          console.error(chalk.red(`  错误: ${error}`));
+          console.log(chalk.red('FAILED'));
+          console.error(chalk.red(`  Error: ${error}`));
           failCount++;
         }
       }
 
       await converter.close();
 
-      console.log(chalk.green(`\n完成: ${successCount} 成功, ${failCount} 失败`));
+      console.log(chalk.green(`\nComplete: ${successCount} succeeded, ${failCount} failed`));
 
     } catch (error) {
-      console.error(chalk.red('批量转换失败:'), error);
+      console.error(chalk.red('Batch conversion failed:'), error);
       process.exit(1);
     }
   });
 
 program
   .command('init')
-  .description('创建配置文件模板')
-  .option('-o, --output <path>', '配置文件路径', 'md2pdf.config.js')
+  .description('Create a configuration file template')
+  .option('-o, --output <path>', 'Configuration file path', 'md2pdf.config.js')
   .action((options: any) => {
     const configContent = `module.exports = {
-  // 默认标题
+  // Default title
   title: 'Document',
   
-  // 启用 Mermaid 图表
+  // Enable Mermaid diagrams
   enableMermaid: true,
   
-  // 启用 LaTeX 公式
+  // Enable LaTeX formulas
   enableLatex: true,
   
-  // 文档主题: 'github-light' | 'github-dark'
+  // Document theme: 'github-light' | 'github-dark'
   theme: 'github-light',
   
-  // 代码高亮主题
+  // Code highlighting theme
   codeTheme: 'github',
   
-  // PDF 选项
+  // PDF options
   pdfOptions: {
     format: 'A4',
     landscape: false,
@@ -194,15 +194,15 @@ program
     }
   },
   
-  // 自定义 CSS
+  // Custom CSS
   customCSS: \`
-    /* 在这里添加自定义样式 */
+    /* Add custom styles here */
   \`
 };
 `;
 
     fs.writeFileSync(options.output, configContent);
-    console.log(chalk.green(`配置文件已创建: ${options.output}`));
+    console.log(chalk.green(`Configuration file created: ${options.output}`));
   });
 
 program.parse();

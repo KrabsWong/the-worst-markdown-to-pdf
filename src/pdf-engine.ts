@@ -155,7 +155,7 @@ export class MarkdownToPDFConverter {
           return true;
         }, { timeout: 30000 });
       } catch (e) {
-        console.warn('Mermaid 图表渲染超时，继续生成 PDF');
+        console.warn('Mermaid diagram rendering timeout, continuing PDF generation');
       }
     }
 
