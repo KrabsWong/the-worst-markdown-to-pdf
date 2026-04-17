@@ -1,11 +1,20 @@
 {
-  "name": "markdown-to-pdf",
+  "name": "the-worst-markdown-to-pdf",
   "version": "1.0.0",
-  "description": "将 Markdown 文档转换为美观的 PDF，支持 GitHub 风格、Mermaid 图表和 LaTeX 公式",
+  "description": "A beautifully designed Markdown to PDF converter with GitHub-style rendering, Mermaid diagrams, and LaTeX math support",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "md2pdf": "dist/cli.js"
+    "md2pdf": "dist/cli.js",
+    "the-worst-markdown-to-pdf": "dist/cli.js"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16.0.0"
   },
   "scripts": {
     "build": "tsc",

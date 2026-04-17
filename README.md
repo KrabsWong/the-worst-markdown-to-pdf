@@ -11,11 +11,32 @@ A CLI tool that converts Markdown to beautifully styled PDFs, following GitHub's
 - **Dark theme** - GitHub dark mode support
 - **Batch conversion** - Convert multiple files at once
 
-## Installation
+## Quick Start
+
+### Using npx (No Global Installation)
+
+If you already have the project cloned, use npx to run without global installation:
 
 ```bash
+# From the project directory
+npx . input.md -o output.pdf
+```
+
+### Local Installation
+
+Clone and build:
+
+```bash
+git clone https://github.com/KrabsWong/the-worst-markdown-to-pdf.git
+cd the-worst-markdown-to-pdf
 npm install
 npm run build
+```
+
+Then use with npx:
+
+```bash
+npx . input.md
 ```
 
 ## Usage
@@ -23,7 +44,15 @@ npm run build
 ### Single file
 
 ```bash
+# Using node directly
 node dist/cli.js input.md
+
+# Using npx (after build)
+npx . input.md
+
+# Using the bin command
+npm link
+md2pdf input.md
 ```
 
 ### With options
