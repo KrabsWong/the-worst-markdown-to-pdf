@@ -15,19 +15,18 @@ export function generateHTMLTemplate(options: HTMLTemplateOptions): string {
     customCSS = ''
   } = options;
 
-  const mermaidScript = enableMermaid ? getMermaidScript() : '';
   const katexScript = enableLatex ? getKaTeXScript() : '';
   const katexCSS = enableLatex ? getKaTeXCSS() : '';
 
   return `<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(title)}</title>
   ${katexCSS}
   <style>
-    /* ===== 基础重置 ===== */
+    /* ===== Base Reset ===== */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -47,13 +46,29 @@ export function generateHTMLTemplate(options: HTMLTemplateOptions): string {
       background-color: #ffffff;
     }
     
-    /* ===== GitHub Markdown 样式 ===== */
+    /* ===== GitHub Markdown Styles ===== */
     ${githubMarkdownCSS}
     
-    /* ===== 自定义样式 ===== */
+    /* ===== Mermaid SVG Styles ===== */
+    .mermaid-svg {
+      text-align: center;
+      margin: 24px 0;
+      padding: 16px;
+      background: var(--color-canvas-subtle, #f6f8fa);
+      border-radius: 6px;
+      border: 1px solid var(--color-border-default, #d0d7de);
+    }
+    
+    .mermaid-svg svg {
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+    }
+    
+    /* ===== Custom Styles ===== */
     ${customCSS}
     
-    /* ===== 页面设置 ===== */
+    /* ===== Page Settings ===== */
     @page {
       size: A4;
       margin: 25mm 20mm 25mm 20mm;
@@ -70,7 +85,6 @@ export function generateHTMLTemplate(options: HTMLTemplateOptions): string {
   </article>
   
   ${katexScript}
-  ${mermaidScript}
 </body>
 </html>`;
 }
@@ -108,75 +122,7 @@ function getKaTeXScript(): string {
 }
 
 /**
- * 获取 Mermaid 脚本
- */
-function getMermaidScript(): string {
-  return `<script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    
-    // Mark mermaid as loading
-    window.__mermaidReady = false;
-    
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      themeVariables: {
-        primaryColor: '#e1f5fe',
-        primaryTextColor: '#01579b',
-        primaryBorderColor: '#0288d1',
-        lineColor: '#0288d1',
-        secondaryColor: '#fff3e0',
-        tertiaryColor: '#f3e5f5'
-      },
-      flowchart: {
-        useMaxWidth: true,
-        htmlLabels: true,
-        curve: 'basis'
-      },
-      sequence: {
-        useMaxWidth: true,
-        diagramMarginX: 50,
-        diagramMarginY: 10
-      },
-      gantt: {
-        useMaxWidth: true,
-        leftPadding: 75,
-        gridLineStartPadding: 35
-      }
-    });
-    
-    // Run mermaid and mark as ready when done
-    async function renderMermaid() {
-      try {
-        await mermaid.run();
-        
-        // Ensure all Mermaid SVGs are properly styled
-        document.querySelectorAll('.mermaid svg').forEach(svg => {
-          svg.style.maxWidth = '100%';
-          svg.style.height = 'auto';
-          svg.setAttribute('width', '100%');
-        });
-        
-        // Mark as ready
-        window.__mermaidReady = true;
-        console.log('Mermaid rendering complete');
-      } catch (error) {
-        console.error('Mermaid rendering error:', error);
-        window.__mermaidReady = true; // Mark as ready even on error
-      }
-    }
-    
-    // Run when DOM is ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', renderMermaid);
-    } else {
-      renderMermaid();
-    }
-  </script>`;
-}
-
-/**
- * 转义 HTML 特殊字符
+ * Escape HTML special characters
  */
 function escapeHtml(text: string): string {
   const map: Record<string, string> = {

@@ -2,17 +2,19 @@ import { chromium, Browser, Page } from 'playwright';
 import { MarkdownToPDFOptions, PDFOptions } from './types';
 import { parseMarkdown } from './markdown-parser';
 import { generateHTMLTemplate } from './html-template';
+import { prerenderMermaid, MermaidRenderer } from './mermaid-renderer';
 import * as fs from 'fs';
 import * as path from 'path';
 
 /**
- * Markdown 转 PDF 核心引擎
+ * Markdown to PDF conversion engine
  */
 export class MarkdownToPDFConverter {
   private browser: Browser | null = null;
+  private mermaidRenderer: MermaidRenderer | null = null;
 
   /**
-   * 初始化浏览器
+   * Initialize browser
    */
   async initialize(): Promise<void> {
     if (!this.browser) {
@@ -20,23 +22,32 @@ export class MarkdownToPDFConverter {
         headless: true
       });
     }
+    // Initialize mermaid renderer
+    if (!this.mermaidRenderer) {
+      this.mermaidRenderer = new MermaidRenderer();
+      await this.mermaidRenderer.initialize();
+    }
   }
 
   /**
-   * 关闭浏览器
+   * Close browser
    */
   async close(): Promise<void> {
     if (this.browser) {
       await this.browser.close();
       this.browser = null;
     }
+    if (this.mermaidRenderer) {
+      await this.mermaidRenderer.close();
+      this.mermaidRenderer = null;
+    }
   }
 
   /**
-   * 转换 Markdown 为 PDF
+   * Convert Markdown to PDF
    */
   async convert(options: MarkdownToPDFOptions): Promise<string> {
-    const {
+    let {
       content,
       outputPath,
       title = 'Document',
@@ -48,16 +59,21 @@ export class MarkdownToPDFConverter {
       theme = 'github-light'
     } = options;
 
-    // 确保输出目录存在
+    // Ensure output directory exists
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // 解析 Markdown
+    // Pre-render Mermaid diagrams on server side if enabled
+    if (enableMermaid && this.mermaidRenderer) {
+      content = await this.mermaidRenderer.renderAll(content);
+    }
+
+    // Parse Markdown
     const htmlContent = parseMarkdown(content);
 
-    // 生成完整 HTML
+    // Generate complete HTML
     const fullHTML = generateHTMLTemplate({
       title,
       content: htmlContent,
@@ -68,7 +84,7 @@ export class MarkdownToPDFConverter {
       customCSS
     });
 
-    // 生成 PDF
+    // Generate PDF
     await this.generatePDF(fullHTML, outputPath, pdfOptions, enableMermaid);
 
     return outputPath;
@@ -139,48 +155,18 @@ export class MarkdownToPDFConverter {
       // KaTeX not enabled or failed to load
     }
 
-    // Wait for Mermaid rendering
+    // Note: Mermaid diagrams are pre-rendered on server side
+    // They are already SVG when HTML is loaded, no need to wait
     if (waitForMermaid) {
-      try {
-        // First check if there are any mermaid diagrams
-        const hasMermaid = await page.evaluate(() => {
-          return document.querySelectorAll('.mermaid').length > 0;
-        });
-        
-        if (hasMermaid) {
-          console.log('Waiting for Mermaid diagrams to render...');
-          
-          // Wait for mermaid to be ready using the flag we set
-          await page.waitForFunction(() => {
-            return (window as any).__mermaidReady === true;
-          }, { timeout: 60000 });
-          
-          // Additional wait for SVG to fully render
-          await page.waitForFunction(() => {
-            const mermaidElements = document.querySelectorAll('.mermaid');
-            for (let i = 0; i < mermaidElements.length; i++) {
-              if (!mermaidElements[i].querySelector('svg')) {
-                return false;
-              }
-            }
-            return true;
-          }, { timeout: 10000 });
-          
-          // Extra wait for any animations to complete
-          await page.waitForTimeout(3000);
-          
-          console.log('Mermaid rendering complete');
-        }
-      } catch (e) {
-        console.warn('Mermaid diagram rendering timeout or error, continuing PDF generation');
-      }
+      // Give a short delay for SVG to stabilize in the layout
+      await page.waitForTimeout(500);
     }
 
     // Ensure all fonts and images are loaded
     await page.waitForLoadState('networkidle');
     
     // Additional wait to ensure rendering is complete
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(1000);
   }
 
   /**

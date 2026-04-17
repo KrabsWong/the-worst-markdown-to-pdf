@@ -22,17 +22,24 @@
     "start": "node dist/cli.js",
     "test": "node dist/test.js"
   },
-  "keywords": ["markdown", "pdf", "mermaid", "latex", "github"],
+  "keywords": [
+    "markdown",
+    "pdf",
+    "mermaid",
+    "latex",
+    "github"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "highlight.js": "^11.9.0",
+    "katex": "^0.16.9",
     "marked": "^9.1.6",
     "marked-highlight": "^2.0.6",
-    "playwright": "^1.40.1",
-    "katex": "^0.16.9",
-    "highlight.js": "^11.9.0",
-    "commander": "^11.1.0",
-    "chalk": "^4.1.2"
+    "mermaid": "^11.14.0",
+    "playwright": "^1.40.1"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -13,9 +13,9 @@ class GitHubRenderer extends Renderer {
   code(code: string, infostring: string | undefined, escaped: boolean): string {
     const lang = (infostring || '').trim();
     
-    // 处理 Mermaid 图表
-    if (lang === 'mermaid') {
-      return `<div class="mermaid">${code}</div>`;
+    // 处理 Mermaid 图表 (服务端预渲染后的 SVG 包装)
+    if (lang === 'mermaid-svg') {
+      return code; // 已经是渲染好的 SVG，直接返回
     }
     
     // 处理普通代码块
