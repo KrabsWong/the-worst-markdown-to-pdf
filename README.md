@@ -139,18 +139,44 @@ $$
 $$
 ```
 
-## Programmatic Usage
+## Technical Details
 
-```typescript
-import { convertMarkdownToPDF } from './dist/index';
+### How It Works
 
-await convertMarkdownToPDF('input.md', 'output.pdf', {
-  title: 'My Document',
-  theme: 'github-light',
-  enableMermaid: true,
-  enableLatex: true
-});
-```
+1. **Markdown Parsing**: Uses `marked` library with GitHub Flavored Markdown (GFM)
+2. **Mermaid Rendering**: Server-side pre-rendering using Playwright for reliable SVG output
+3. **LaTeX Rendering**: KaTeX formulas rendered in browser with CDN
+4. **PDF Generation**: Playwright prints the rendered HTML to PDF
+
+### Table Layout
+
+Wide tables automatically adjust to fit the page:
+- Text wraps within cells
+- Font size reduces slightly for print
+- Tables can span multiple pages with repeating headers
+
+### Mermaid Diagram Support
+
+All Mermaid diagram types are supported:
+- Flowcharts (`graph TD`, `graph LR`)
+- Sequence diagrams
+- Gantt charts
+- Class diagrams
+- State diagrams
+- Entity Relationship diagrams
+
+## Troubleshooting
+
+### Mermaid diagrams not rendering
+
+Mermaid diagrams are pre-rendered on the server side. If you see raw code:
+- Check your internet connection (Mermaid library loads from CDN during rendering)
+- Try running with `--no-mermaid` to skip diagram rendering
+- Check the mermaid code syntax is valid
+
+### PDF generation is slow
+
+First run requires downloading Chromium (~100MB). Subsequent runs are faster.
 
 ## License
 

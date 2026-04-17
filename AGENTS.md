@@ -1,90 +1,99 @@
-# Markdown to PDF 项目说明
+# Markdown to PDF - Project Documentation
 
-## 项目概述
+## Project Overview
 
-这是一个将 Markdown 文档转换为美观 PDF 的工具，严格遵循 GitHub Markdown 渲染规范，支持 Mermaid 图表和 LaTeX 数学公式。
+A tool that converts Markdown documents to beautifully styled PDFs, strictly following GitHub Markdown rendering specifications. Supports Mermaid diagrams and LaTeX mathematical formulas.
 
-## 核心特性
+## Core Features
 
-1. **GitHub 风格渲染**：完美还原 GitHub 的 Markdown 渲染效果
-2. **Mermaid 图表**：支持流程图、时序图、甘特图、类图等
-3. **LaTeX 公式**：完整的数学公式支持（行内和块级）
-4. **代码高亮**：使用 highlight.js，支持多种代码主题
-5. **暗色主题**：支持 GitHub 暗色主题
-6. **批量转换**：支持批量转换多个文件
+1. **GitHub-style Rendering** - Perfectly reproduces GitHub's Markdown rendering effect
+2. **Mermaid Diagrams** - Supports flowcharts, sequence diagrams, Gantt charts, class diagrams, etc.
+3. **LaTeX Formulas** - Complete mathematical formula support (inline and block level)
+4. **Code Highlighting** - Uses highlight.js, supports multiple code themes
+5. **Dark Theme** - Supports GitHub dark theme
+6. **Batch Conversion** - Supports batch conversion of multiple files
 
-## 项目结构
+## Project Structure
 
 ```
 markdown-to-pdf/
 ├── src/
-│   ├── index.ts              # 入口文件，导出所有模块
-│   ├── cli.ts                # 命令行工具
-│   ├── pdf-engine.ts         # PDF 生成引擎
-│   ├── markdown-parser.ts    # Markdown 解析器
-│   ├── html-template.ts      # HTML 模板生成器
-│   ├── types.ts              # TypeScript 类型定义
+│   ├── index.ts              # Entry file, exports all modules
+│   ├── cli.ts                # Command line tool
+│   ├── pdf-engine.ts         # PDF generation engine
+│   ├── markdown-parser.ts    # Markdown parser
+│   ├── html-template.ts      # HTML template generator
+│   ├── mermaid-renderer.ts   # Mermaid diagram server-side renderer
+│   ├── types.ts              # TypeScript type definitions
 │   ├── styles/
-│   │   └── github-markdown.ts    # GitHub 风格 CSS
-│   └── test.ts               # 测试文件
+│   │   └── github-markdown.ts    # GitHub-style CSS
+│   └── test.ts               # Test file
 ├── examples/
-│   └── demo.md               # 示例文档
-├── dist/                     # 编译后的 JavaScript
+│   └── demo.md               # Example document
+├── dist/                     # Compiled JavaScript
 ├── package.json
 ├── tsconfig.json
 └── README.md
 ```
 
-## 技术栈
+## Technology Stack
 
-- **TypeScript**：主要开发语言
-- **marked**：Markdown 解析器
-- **playwright**：浏览器自动化（PDF 生成）
-- **KaTeX**：LaTeX 公式渲染
-- **highlight.js**：代码高亮
-- **mermaid.js**：图表渲染
+- **TypeScript**: Main development language
+- **marked**: Markdown parser
+- **playwright**: Browser automation (PDF generation)
+- **KaTeX**: LaTeX formula rendering
+- **highlight.js**: Code highlighting
+- **mermaid.js**: Diagram rendering
 
-## 构建命令
+## Build Commands
 
 ```bash
-# 安装依赖
+# Install dependencies
 npm install
 
-# 编译 TypeScript
+# Compile TypeScript
 npm run build
 
-# 运行测试
+# Run tests
 npm test
 
-# CLI 使用
+# CLI usage
 node dist/cli.js <input.md> [options]
 ```
 
-## 渲染流程
+## Rendering Pipeline
 
-1. 读取 Markdown 文件
-2. 预处理（LaTeX 公式、警告框）
-3. 使用 marked 解析 Markdown
-4. 生成完整 HTML 页面（包含 CSS 和脚本）
-5. 使用 Playwright 渲染 HTML
-6. 等待资源加载（KaTeX、Mermaid）
-7. 生成 PDF
+1. Read Markdown file
+2. Preprocessing (LaTeX formulas, alerts)
+3. Parse Markdown to HTML using marked
+4. **Server-side pre-render Mermaid diagrams** (using separate Chromium instance)
+5. Generate complete HTML page (with CSS and scripts)
+6. Render HTML using Playwright
+7. Wait for KaTeX formula rendering to complete
+8. Generate PDF
 
-## 样式系统
+### Mermaid Rendering Notes
 
-- 基于 GitHub 的 Markdown 样式
-- 使用 CSS 变量支持主题切换
-- 打印优化（避免分页截断）
-- 响应式设计
+Mermaid diagrams are **pre-rendered server-side** as SVG, rather than being rendered in the final PDF generation browser. Benefits:
+- More reliable, avoids CDN loading failure issues
+- Can render multiple diagrams in parallel
+- No need to wait for JavaScript execution during PDF generation
 
-## 扩展点
+## Styling System
 
-- `customCSS`：添加自定义 CSS
-- `pdfOptions`：自定义 PDF 输出选项
-- `Renderer`：自定义 Markdown 渲染器
+- Based on GitHub's Markdown style
+- Uses CSS variables for theme switching support
+- Print optimization (avoids page break truncation)
+- Responsive design
 
-## 注意事项
+## Extension Points
 
-- 首次运行需要下载 Chromium（通过 Playwright）
-- Mermaid 图表渲染需要网络连接（CDN 加载）
-- LaTeX 公式渲染需要网络连接（CDN 加载）
+- `customCSS`: Add custom CSS
+- `pdfOptions`: Customize PDF output options
+- `Renderer`: Customize Markdown renderer
+
+## Notes
+
+- First run requires downloading Chromium (via Playwright)
+- Mermaid diagram rendering requires internet connection (CDN loading)
+- LaTeX formula rendering requires internet connection (CDN loading)
