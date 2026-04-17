@@ -141,6 +141,13 @@ $$
 $$
 ```
 
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/2f6d787b-e0e2-480c-afb3-85b0e985a588" />
+<br />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/dd065b26-4072-4284-97e8-f42040e30281" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/3421a384-42d7-410c-a1db-1a23456eae19" />
+
+
+
 ## Technical Details
 
 ### How It Works
