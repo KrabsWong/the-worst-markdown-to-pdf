@@ -166,8 +166,10 @@ export class MermaidRenderer {
     // Process blocks from last to first to preserve string indices
     for (let i = blocks.length - 1; i >= 0; i--) {
       const block = blocks[i];
+      // Calculate display order (1-based, counting from first to last)
+      const displayOrder = blocks.length - i;
       try {
-        console.log(`  Rendering diagram ${i + 1}/${blocks.length}...`);
+        console.log(`  Rendering diagram ${displayOrder}/${blocks.length}...`);
         const svg = await this.renderDiagram(block.code);
 
         // Create SVG wrapper
@@ -181,7 +183,7 @@ export class MermaidRenderer {
         }
 
       } catch (error) {
-        console.warn(`  Failed to render diagram ${i + 1}: ${error}`);
+        console.warn(`  Failed to render diagram ${displayOrder}: ${error}`);
         // Keep original block on error
       }
     }
