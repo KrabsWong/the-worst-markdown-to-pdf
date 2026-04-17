@@ -8,6 +8,7 @@ import { chromium, Browser } from 'playwright';
 interface MermaidDiagram {
   id: string;
   code: string;
+  originalHTML: string;
 }
 
 export class MermaidRenderer {
@@ -45,22 +46,26 @@ export class MermaidRenderer {
     const mermaidRegex = /<pre><code class="hljs language-mermaid">([\s\S]*?)<\/code><\/pre>/g;
     let match;
     let index = 0;
-    
+
     while ((match = mermaidRegex.exec(html)) !== null) {
-      // Decode HTML entities
+      // Store the original HTML (with encoded entities) for replacement
+      const originalHTML = match[0];
+
+      // Decode HTML entities for rendering
       const code = match[1]
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
-      
+
       blocks.push({
         id: `mermaid-${index++}`,
-        code: code
+        code: code,
+        originalHTML: originalHTML
       });
     }
-    
+
     return blocks;
   }
 
@@ -149,43 +154,39 @@ export class MermaidRenderer {
    */
   async renderAllInHTML(html: string): Promise<string> {
     const blocks = this.extractMermaidBlocksFromHTML(html);
-    
+
     if (blocks.length === 0) {
       return html;
     }
 
     console.log(`Found ${blocks.length} Mermaid diagram(s) to render...`);
-    
+
     let result = html;
-    
+
     // Process blocks from last to first to preserve string indices
     for (let i = blocks.length - 1; i >= 0; i--) {
       const block = blocks[i];
       try {
         console.log(`  Rendering diagram ${i + 1}/${blocks.length}...`);
         const svg = await this.renderDiagram(block.code);
-        
+
         // Create SVG wrapper
         const svgWrapper = `<div class="mermaid-svg" style="text-align: center; margin: 24px 0; padding: 16px; background: #f6f8fa; border-radius: 6px; border: 1px solid #d0d7de;">${svg}</div>`;
-        
-        // Find and replace this specific mermaid code block
-        const mermaidBlockRegex = new RegExp(
-          `<pre><code class="hljs language-mermaid">${this.escapeRegex(block.code)}<\\/code><\\/pre>`
-        );
-        
-        result = result.replace(mermaidBlockRegex, svgWrapper);
-        
+
+        // Replace using the exact original HTML string
+        // Use split/join to replace only the first occurrence from the end
+        const lastIndex = result.lastIndexOf(block.originalHTML);
+        if (lastIndex !== -1) {
+          result = result.substring(0, lastIndex) + svgWrapper + result.substring(lastIndex + block.originalHTML.length);
+        }
+
       } catch (error) {
         console.warn(`  Failed to render diagram ${i + 1}: ${error}`);
         // Keep original block on error
       }
     }
-    
-    return result;
-  }
 
-  private escapeRegex(str: string): string {
-    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return result;
   }
 }
 
