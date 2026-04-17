@@ -2,7 +2,7 @@ import { chromium, Browser, Page } from 'playwright';
 import { MarkdownToPDFOptions, PDFOptions } from './types';
 import { parseMarkdown } from './markdown-parser';
 import { generateHTMLTemplate } from './html-template';
-import { prerenderMermaid, MermaidRenderer } from './mermaid-renderer';
+import { renderMermaidInHTML, MermaidRenderer } from './mermaid-renderer';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -65,16 +65,11 @@ export class MarkdownToPDFConverter {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Pre-render Mermaid diagrams on server side if enabled
-    if (enableMermaid && this.mermaidRenderer) {
-      content = await this.mermaidRenderer.renderAll(content);
-    }
-
-    // Parse Markdown
+    // Step 1: Parse Markdown to HTML
     const htmlContent = parseMarkdown(content);
 
-    // Generate complete HTML
-    const fullHTML = generateHTMLTemplate({
+    // Step 2: Generate full HTML template
+    let fullHTML = generateHTMLTemplate({
       title,
       content: htmlContent,
       enableMermaid,
@@ -84,7 +79,12 @@ export class MarkdownToPDFConverter {
       customCSS
     });
 
-    // Generate PDF
+    // Step 3: Render Mermaid diagrams in HTML (if enabled)
+    if (enableMermaid && this.mermaidRenderer) {
+      fullHTML = await this.mermaidRenderer.renderAllInHTML(fullHTML);
+    }
+
+    // Step 4: Generate PDF
     await this.generatePDF(fullHTML, outputPath, pdfOptions, enableMermaid);
 
     return outputPath;

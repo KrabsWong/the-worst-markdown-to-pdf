@@ -1,10 +1,8 @@
 import { chromium, Browser } from 'playwright';
-import * as fs from 'fs';
-import * as path from 'path';
 
 /**
- * Mermaid 服务端渲染器
- * 在 Node.js 环境中预渲染 Mermaid 图表为 SVG
+ * Mermaid server-side renderer
+ * Renders Mermaid diagrams to SVG in Node.js environment
  */
 
 interface MermaidDiagram {
@@ -39,19 +37,27 @@ export class MermaidRenderer {
   }
 
   /**
-   * 提取所有 Mermaid 代码块
+   * Extract all Mermaid code blocks from HTML
    */
-  extractMermaidBlocks(content: string): MermaidDiagram[] {
+  extractMermaidBlocksFromHTML(html: string): MermaidDiagram[] {
     const blocks: MermaidDiagram[] = [];
-    // 匹配 ```mermaid ... ``` 代码块
-    const mermaidRegex = /```mermaid\n([\s\S]*?)```/g;
+    // Match <pre><code class="language-mermaid">...</code></pre>
+    const mermaidRegex = /<pre><code class="hljs language-mermaid">([\s\S]*?)<\/code><\/pre>/g;
     let match;
     let index = 0;
     
-    while ((match = mermaidRegex.exec(content)) !== null) {
+    while ((match = mermaidRegex.exec(html)) !== null) {
+      // Decode HTML entities
+      const code = match[1]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+      
       blocks.push({
         id: `mermaid-${index++}`,
-        code: match[1].trim()
+        code: code
       });
     }
     
@@ -59,7 +65,7 @@ export class MermaidRenderer {
   }
 
   /**
-   * 渲染单个 Mermaid 图表
+   * Render a single Mermaid diagram
    */
   async renderDiagram(code: string): Promise<string> {
     if (!this.browser) {
@@ -69,65 +75,69 @@ export class MermaidRenderer {
     const page = await this.browser!.newPage();
     
     try {
-      // 创建包含 Mermaid 的简单 HTML 页面
+      // Create a simple HTML page with Mermaid
       const html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <style>
-    body { margin: 0; padding: 20px; }
+    body { margin: 0; padding: 20px; font-family: sans-serif; }
     .mermaid { text-align: center; }
   </style>
 </head>
 <body>
-  <div class="mermaid">${this.escapeHtml(code)}</div>
+  <div class="mermaid"></div>
   
-  <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
-    
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
     window.__svgContent = null;
     
     mermaid.initialize({
       startOnLoad: false,
-      theme: 'default'
+      theme: 'default',
+      securityLevel: 'loose'
     });
     
     async function render() {
       try {
-        const element = document.querySelector('.mermaid');
-        if (element) {
-          const { svg } = await mermaid.render('mermaid-svg', element.textContent);
-          window.__svgContent = svg;
-        }
+        const graphDefinition = ${JSON.stringify(code)};
+        const { svg } = await mermaid.render('mermaid-svg-' + Date.now(), graphDefinition);
+        window.__svgContent = svg;
       } catch (error) {
-        console.error('Render error:', error);
-        window.__svgContent = 'ERROR: ' + error.message;
+        console.error('Mermaid render error:', error);
+        window.__svgContent = 'ERROR: ' + (error.message || 'Unknown error');
       }
     }
     
-    render();
+    setTimeout(render, 100);
   </script>
 </body>
 </html>`;
 
       await page.setContent(html, { waitUntil: 'networkidle' });
       
-      // 等待渲染完成
-      await page.waitForFunction(() => {
-        return (window as any).__svgContent !== null;
-      }, { timeout: 30000 });
+      // Wait for render to complete
+      let attempts = 0;
+      const maxAttempts = 50;
       
-      // 获取 SVG 内容
-      const svg = await page.evaluate(() => {
-        return (window as any).__svgContent;
-      });
-      
-      if (svg && svg.startsWith('ERROR:')) {
-        throw new Error(svg.substring(7));
+      while (attempts < maxAttempts) {
+        const svg = await page.evaluate(() => {
+          return (window as any).__svgContent;
+        });
+        
+        if (svg !== null) {
+          if (svg.startsWith('ERROR:')) {
+            throw new Error(svg.substring(7));
+          }
+          return svg;
+        }
+        
+        await page.waitForTimeout(100);
+        attempts++;
       }
       
-      return svg || '';
+      throw new Error('Timeout waiting for Mermaid to render');
       
     } finally {
       await page.close();
@@ -135,60 +145,61 @@ export class MermaidRenderer {
   }
 
   /**
-   * 批量渲染所有 Mermaid 图表
+   * Render all Mermaid diagrams in HTML and return updated HTML
    */
-  async renderAll(content: string): Promise<string> {
-    const blocks = this.extractMermaidBlocks(content);
+  async renderAllInHTML(html: string): Promise<string> {
+    const blocks = this.extractMermaidBlocksFromHTML(html);
     
     if (blocks.length === 0) {
-      return content;
+      return html;
     }
 
     console.log(`Found ${blocks.length} Mermaid diagram(s) to render...`);
     
-    let result = content;
+    let result = html;
     
-    for (const block of blocks) {
+    // Process blocks from last to first to preserve string indices
+    for (let i = blocks.length - 1; i >= 0; i--) {
+      const block = blocks[i];
       try {
-        console.log(`  Rendering diagram ${parseInt(block.id.split('-')[1]) + 1}/${blocks.length}...`);
+        console.log(`  Rendering diagram ${i + 1}/${blocks.length}...`);
         const svg = await this.renderDiagram(block.code);
         
-        // 替换原始代码块为 SVG
-        const originalBlock = '```mermaid\n' + block.code + '```';
-        const svgWrapper = `<div class="mermaid-svg">${svg}</div>`;
+        // Create SVG wrapper
+        const svgWrapper = `<div class="mermaid-svg" style="text-align: center; margin: 24px 0; padding: 16px; background: #f6f8fa; border-radius: 6px; border: 1px solid #d0d7de;">${svg}</div>`;
         
-        result = result.replace(originalBlock, svgWrapper);
+        // Find and replace this specific mermaid code block
+        const mermaidBlockRegex = new RegExp(
+          `<pre><code class="hljs language-mermaid">${this.escapeRegex(block.code)}<\\/code><\\/pre>`
+        );
+        
+        result = result.replace(mermaidBlockRegex, svgWrapper);
         
       } catch (error) {
-        console.warn(`  Failed to render diagram: ${error}`);
-        // 保留原始代码块
+        console.warn(`  Failed to render diagram ${i + 1}: ${error}`);
+        // Keep original block on error
       }
     }
     
     return result;
   }
 
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }
 
 /**
- * 便捷函数：预渲染 Markdown 中的 Mermaid 图表
+ * Convenience function: render Mermaid diagrams in HTML
  */
-export async function prerenderMermaid(content: string): Promise<string> {
+export async function renderMermaidInHTML(html: string): Promise<string> {
   const renderer = MermaidRenderer.getInstance();
   
   try {
     await renderer.initialize();
-    return await renderer.renderAll(content);
+    return await renderer.renderAllInHTML(html);
   } finally {
-    // 不在这里关闭 browser，因为可能在批量转换中复用
+    // Don't close browser here as it may be reused in batch conversions
   }
 }
 

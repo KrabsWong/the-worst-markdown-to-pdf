@@ -13,12 +13,7 @@ class GitHubRenderer extends Renderer {
   code(code: string, infostring: string | undefined, escaped: boolean): string {
     const lang = (infostring || '').trim();
     
-    // 处理 Mermaid 图表 (服务端预渲染后的 SVG 包装)
-    if (lang === 'mermaid-svg') {
-      return code; // 已经是渲染好的 SVG，直接返回
-    }
-    
-    // 处理普通代码块
+    // 处理普通代码块 (Mermaid 将在后续阶段服务端渲染)
     if (lang && hljs.getLanguage(lang)) {
       try {
         const highlighted = hljs.highlight(code, { language: lang }).value;
