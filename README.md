@@ -2,6 +2,8 @@
 
 A CLI tool that converts Markdown to beautifully styled PDFs, following GitHub's rendering specification.
 
+<img width="859" height="274" alt="image" src="https://github.com/user-attachments/assets/5bae1dd4-c1ea-46e5-a091-e679a097f156" />
+
 ## Features
 
 - **GitHub-style rendering** - Matches GitHub's Markdown output exactly
