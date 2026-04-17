@@ -114,8 +114,11 @@ function getMermaidScript(): string {
   return `<script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
     
+    // Mark mermaid as loading
+    window.__mermaidReady = false;
+    
     mermaid.initialize({
-      startOnLoad: true,
+      startOnLoad: false,
       theme: 'default',
       themeVariables: {
         primaryColor: '#e1f5fe',
@@ -142,16 +145,33 @@ function getMermaidScript(): string {
       }
     });
     
-    // 等待渲染完成后调整 SVG
-    window.addEventListener('load', async () => {
-      await mermaid.run();
-      
-      // 确保所有 Mermaid SVG 正确显示
-      document.querySelectorAll('.mermaid svg').forEach(svg => {
-        svg.style.maxWidth = '100%';
-        svg.style.height = 'auto';
-      });
-    });
+    // Run mermaid and mark as ready when done
+    async function renderMermaid() {
+      try {
+        await mermaid.run();
+        
+        // Ensure all Mermaid SVGs are properly styled
+        document.querySelectorAll('.mermaid svg').forEach(svg => {
+          svg.style.maxWidth = '100%';
+          svg.style.height = 'auto';
+          svg.setAttribute('width', '100%');
+        });
+        
+        // Mark as ready
+        window.__mermaidReady = true;
+        console.log('Mermaid rendering complete');
+      } catch (error) {
+        console.error('Mermaid rendering error:', error);
+        window.__mermaidReady = true; // Mark as ready even on error
+      }
+    }
+    
+    // Run when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', renderMermaid);
+    } else {
+      renderMermaid();
+    }
   </script>`;
 }
 

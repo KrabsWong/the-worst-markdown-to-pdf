@@ -485,18 +485,26 @@ export const githubMarkdownCSS = `
 .markdown-body table {
   border-spacing: 0;
   border-collapse: collapse;
-  display: block;
+  display: table;
   width: 100%;
-  width: max-content;
   max-width: 100%;
-  overflow: auto;
   margin-bottom: 16px;
+  table-layout: auto;
 }
 
 .markdown-body table th,
 .markdown-body table td {
   padding: 6px 13px;
   border: 1px solid var(--color-table-border);
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 300px;
+  hyphens: auto;
+}
+
+.markdown-body table th {
+  font-weight: 600;
+  background-color: var(--color-table-header-bg);
 }
 
 .markdown-body table tr {
@@ -508,13 +516,19 @@ export const githubMarkdownCSS = `
   background-color: var(--color-table-row-alt-bg);
 }
 
-.markdown-body table th {
-  font-weight: 600;
-  background-color: var(--color-table-header-bg);
-}
-
 .markdown-body table img {
   background-color: transparent;
+}
+
+/* 表格容器，用于处理超宽表格 */
+.markdown-body .table-container {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-bottom: 16px;
+}
+
+.markdown-body .table-container table {
+  margin-bottom: 0;
 }
 
 /* ===== 水平线 ===== */
@@ -706,7 +720,7 @@ export const githubMarkdownCSS = `
 @media print {
   .markdown-body {
     padding: 0;
-    font-size: 12pt;
+    font-size: 11pt;
     line-height: 1.5;
   }
   
@@ -721,9 +735,33 @@ export const githubMarkdownCSS = `
   }
   
   .markdown-body pre,
-  .markdown-body blockquote,
-  .markdown-body table {
+  .markdown-body blockquote {
     page-break-inside: avoid;
+  }
+  
+  /* Table print optimizations */
+  .markdown-body table {
+    page-break-inside: auto;
+    font-size: 10pt;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .markdown-body table thead {
+    display: table-header-group;
+  }
+  
+  .markdown-body table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  .markdown-body table td,
+  .markdown-body table th {
+    page-break-inside: avoid;
+    max-width: none;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
   }
   
   .markdown-body a {

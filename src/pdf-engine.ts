@@ -124,45 +124,62 @@ export class MarkdownToPDFConverter {
   }
 
   /**
-   * 等待页面资源加载完成
+   * Wait for page resources to load
    */
   private async waitForResources(page: Page, waitForMermaid: boolean): Promise<void> {
-    // 等待 KaTeX 渲染
+    // Wait for KaTeX to render
     try {
       await page.waitForFunction(() => {
         return typeof (window as any).renderMathInElement !== 'undefined';
-      }, { timeout: 5000 });
+      }, { timeout: 10000 });
       
-      // 等待数学公式渲染
+      // Wait for math formulas to render
       await page.waitForTimeout(1000);
     } catch (e) {
-      // KaTeX 未启用或加载失败
+      // KaTeX not enabled or failed to load
     }
 
-    // 等待 Mermaid 渲染
+    // Wait for Mermaid rendering
     if (waitForMermaid) {
       try {
-        await page.waitForFunction(() => {
-          const mermaidElements = document.querySelectorAll('.mermaid');
-          if (mermaidElements.length === 0) return true;
+        // First check if there are any mermaid diagrams
+        const hasMermaid = await page.evaluate(() => {
+          return document.querySelectorAll('.mermaid').length > 0;
+        });
+        
+        if (hasMermaid) {
+          console.log('Waiting for Mermaid diagrams to render...');
           
-          // 检查是否所有 Mermaid 元素都已渲染为 SVG
-          for (let i = 0; i < mermaidElements.length; i++) {
-            if (!mermaidElements[i].querySelector('svg')) {
-              return false;
+          // Wait for mermaid to be ready using the flag we set
+          await page.waitForFunction(() => {
+            return (window as any).__mermaidReady === true;
+          }, { timeout: 60000 });
+          
+          // Additional wait for SVG to fully render
+          await page.waitForFunction(() => {
+            const mermaidElements = document.querySelectorAll('.mermaid');
+            for (let i = 0; i < mermaidElements.length; i++) {
+              if (!mermaidElements[i].querySelector('svg')) {
+                return false;
+              }
             }
-          }
-          return true;
-        }, { timeout: 30000 });
+            return true;
+          }, { timeout: 10000 });
+          
+          // Extra wait for any animations to complete
+          await page.waitForTimeout(3000);
+          
+          console.log('Mermaid rendering complete');
+        }
       } catch (e) {
-        console.warn('Mermaid diagram rendering timeout, continuing PDF generation');
+        console.warn('Mermaid diagram rendering timeout or error, continuing PDF generation');
       }
     }
 
-    // 确保所有字体和图片加载完成
+    // Ensure all fonts and images are loaded
     await page.waitForLoadState('networkidle');
     
-    // 额外等待确保渲染完成
+    // Additional wait to ensure rendering is complete
     await page.waitForTimeout(2000);
   }
 
